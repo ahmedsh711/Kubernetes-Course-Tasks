@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task 1 — Multi-Container Pods: Init Container &amp; Sidecar (Zero-Volume Architecture)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-card: #1e293b;
+      --bg-code: #0b1120;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-green: #4ade80;
+      --accent-amber: #fbbf24;
+      --accent-red: #f87171;
+      --border: #334155;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 2rem 1rem 4rem;
+    }
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 999px;
+      padding: 0.2rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 2rem;
+      color: #f8fafc;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      font-size: 1.45rem;
+      color: #f8fafc;
+      margin: 2.25rem 0 1rem;
+      padding-bottom: 0.45rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 1.15rem;
+      color: var(--accent);
+      margin: 1.25rem 0 0.5rem;
+    }
+    p {
+      margin-bottom: 0.9rem;
+      color: var(--text);
+    }
+    ul, ol {
+      margin: 0.5rem 0 1rem 1.4rem;
+    }
+    li {
+      margin-bottom: 0.4rem;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.35rem;
+      margin-bottom: 1.25rem;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 1.15rem;
+    }
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+      padding: 0.95rem 1.15rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1rem 0;
+    }
+    .callout.warn {
+      border-left-color: var(--accent-amber);
+      background: rgba(251, 191, 36, 0.08);
+    }
+    .callout.success {
+      border-left-color: var(--accent-green);
+      background: rgba(74, 222, 128, 0.08);
+    }
+    .callout.danger {
+      border-left-color: var(--accent-red);
+      background: rgba(248, 113, 113, 0.08);
+    }
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.88rem;
+      color: #e2e8f0;
+      margin: 0.75rem 0 1rem;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 0.12rem 0.38rem;
+      border-radius: 4px;
+      color: #bae6fd;
+      font-size: 0.9em;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.92rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.7rem 0.85rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #0b1120;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    tr:nth-child(even) td {
+      background: rgba(15, 23, 42, 0.35);
+    }
+    .diagram-box {
+      text-align: center;
+      background: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+    }
+    .diagram-box img, .screenshot-card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .screenshot-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .screenshot-card h4 {
+      color: #f8fafc;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+    .status-pass {
+      color: var(--accent-green);
+      font-weight: 700;
+    }
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 1rem;
+    }
+    .toc a {
+      color: var(--accent);
+      text-decoration: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.88rem;
+    }
+    .toc a:hover {
+      border-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">MLOps MENA Community — Kubernetes Course Session 1</span>
+      <h1>Task 1: Multi-Container Pods (Init Container &amp; Sidecar Without Volumes)</h1>
+      <p style="color: var(--text-muted);">
+        Complete technical guide, conceptual breakdown, annotated Kubernetes manifests, failure experiment analysis, and 11-point verification report.
+      </p>
+      <nav class="toc">
+        <a href="#overview">1. Task Goal &amp; Overview</a>
+        <a href="#concepts">2. Deep-Dive Session 1 Concepts</a>
+        <a href="#architecture">3. Architecture Diagram &amp; Data Flow</a>
+        <a href="#manifests">4. Annotated YAML Manifests</a>
+        <a href="#step5-qa">5. Step 5 Failure Analysis &amp; Q&amp;A</a>
+        <a href="#verification">6. 11 Verification Checks &amp; Evidence</a>
+        <a href="#screenshots">7. Visual Verification Screenshots</a>
+      </nav>
+    </header>
+
+    <!-- SECTION 1: OVERVIEW -->
+    <section id="overview">
+      <h2>1. Task Goal &amp; Overview</h2>
+      <div class="card">
+        <p>
+          In this task, we deploy a 3-replica web application named <code>web-deployment</code> inside the <code>webapp</code> namespace on a 3-node Minikube cluster running the <strong>Calico CNI</strong> network plugin. Each Pod serves an HTML page on port 80 that displays the current timestamp and refreshes every 5 seconds:
+        </p>
+        <pre><code>hello in MLOPS MENA COMMUNITY : 2026-11-12 09:05:10</code></pre>
+        <p>
+          Normally, when a sidecar container updates a file served by a main web server container, both containers mount a shared <code>emptyDir</code> volume. <strong>In this task, volumes are strictly forbidden.</strong> Instead, each Pod uses three containers and shares the Linux process namespace (<code>shareProcessNamespace: true</code>) so the sidecar can write directly into the <code>nginx</code> container's filesystem via <code>/proc/&lt;PID&gt;/root</code>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Container Name</th>
+              <th>Role / Type</th>
+              <th>Image</th>
+              <th>Responsibility</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>init-done</code></td>
+              <td>Init Container</td>
+              <td><code>busybox:1.36</code></td>
+              <td>Runs first, prints <code>done</code>, and exits with status <code>0</code>. Blocks the main and sidecar containers until it succeeds.</td>
+            </tr>
+            <tr>
+              <td><code>nginx</code></td>
+              <td>Main Container</td>
+              <td><code>nginx:1.27</code></td>
+              <td>Writes the initial timestamped greeting to <code>/usr/share/nginx/html/index.html</code> and runs <code>nginx -g 'daemon off;'</code> on port 80.</td>
+            </tr>
+            <tr>
+              <td><code>time-updater</code></td>
+              <td>Sidecar Container</td>
+              <td><code>busybox:1.36</code></td>
+              <td>Finds the running <code>nginx</code> master PID every 5 seconds and overwrites <code>/proc/$PID/root/usr/share/nginx/html/index.html</code> with the new timestamp.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 2: CONCEPTS -->
+    <section id="concepts">
+      <h2>2. Deep-Dive Concepts from Session 1</h2>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Cluster Architecture (Control Plane vs. Workers)</h3>
+          <p>
+            Our Minikube cluster runs with <strong>3 nodes</strong> (<code>--nodes 3 --cni=calico --cpus 2 --memory 2200</code>):
+          </p>
+          <ul>
+            <li><strong>Control Plane (<code>minikube</code>):</strong> Runs the API Server, <code>etcd</code> state store, Controller Manager (which manages Deployment and ReplicaSet loops), and Scheduler.</li>
+            <li><strong>Worker Nodes (<code>minikube-m02</code>, <code>minikube-m03</code>):</strong> Run <code>kubelet</code>, <code>kube-proxy</code>, and the container runtime to execute application Pods across nodes.</li>
+            <li><strong>Calico CNI:</strong> Provides Pod-to-Pod networking across all 3 nodes and enforces Kubernetes NetworkPolicies (required in later course tasks).</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Pods as the Atomic Scheduling Unit</h3>
+          <p>
+            In Kubernetes, you never deploy a raw container directly; you deploy a <strong>Pod</strong>. All containers inside a Pod are always scheduled together onto the exact same node and share:
+          </p>
+          <ul>
+            <li><strong>Network Namespace:</strong> Same IP address and port space (<code>localhost</code>).</li>
+            <li><strong>IPC Namespace:</strong> Inter-process communication memory segments.</li>
+            <li><strong>Process Namespace (Optional):</strong> Enabled via <code>shareProcessNamespace: true</code> so containers see each other's running processes.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Init Containers vs. Sidecar Containers</h3>
+          <ul>
+            <li>
+              <strong>Init Containers (<code>init-done</code>):</strong> Defined under <code>spec.initContainers</code>. They run <em>sequentially</em> to completion before any application container starts. If an init container fails (non-zero exit code), Kubernetes restarts it repeatedly (<code>Init:Error</code> &rarr; <code>Init:CrashLoopBackOff</code>) and <strong>never starts</strong> the main or sidecar containers. Because init containers finish before the Pod runs, <code>READY 2/2</code> counts only the two long-running app containers (<code>nginx</code> and <code>time-updater</code>).
+            </li>
+            <li>
+              <strong>Sidecar Containers (<code>time-updater</code>):</strong> Defined alongside the main container in <code>spec.containers</code>. A sidecar runs concurrently with the main application container for the entire lifecycle of the Pod, augmenting or updating the primary service without modifying the main container image.
+            </li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Zero-Volume File Sharing via <code>/proc/&lt;PID&gt;/root</code> &amp; <code>SYS_PTRACE</code></h3>
+          <p>
+            Even though each container in a Pod has its own isolated root filesystem (from its own Docker image), enabling <code>shareProcessNamespace: true</code> puts all containers in the Pod into the same Linux PID namespace:
+          </p>
+          <ol>
+            <li><code>time-updater</code> runs <code>PID=$(pgrep -o nginx)</code> to find the oldest (master) <code>nginx</code> process ID.</li>
+            <li>In Linux, every process exposes a symbolic view of its own root filesystem at <code>/proc/&lt;PID&gt;/root</code>.</li>
+            <li>Because <code>nginx</code> and <code>time-updater</code> are in different mount namespaces/containers, the Linux kernel restricts cross-container inspection of <code>/proc/&lt;PID&gt;/root</code> unless the reader holds the <strong><code>CAP_SYS_PTRACE</code></strong> capability.</li>
+            <li>Adding <code>capabilities.add: ["SYS_PTRACE"]</code> to <code>time-updater</code> grants permission to traverse <code>/proc/$PID/root/usr/share/nginx/html/index.html</code> and overwrite the HTML file directly inside <code>nginx</code>'s root filesystem every 5 seconds.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Deployment RollingUpdate &amp; Zero-Downtime Protection</h3>
+        <p>
+          By default, a Kubernetes <code>Deployment</code> uses <code>strategy.type: RollingUpdate</code> with <code>maxSurge: 25%</code> and <code>maxUnavailable: 25%</code>. For <code>replicas: 3</code>:
+        </p>
+        <ul>
+          <li><code>maxUnavailable</code> rounds down (<code>floor(3 * 0.25) = 0</code>), meaning Kubernetes <strong>must keep all 3 existing Ready Pods alive</strong> during an update until a replacement Pod becomes Ready.</li>
+          <li><code>maxSurge</code> rounds up (<code>ceil(3 * 0.25) = 1</code>), allowing Kubernetes to create <strong>1 extra Pod</strong> (4 Pods total) from the new ReplicaSet.</li>
+          <li>When Step 5 introduces a failing init container, that 1 new surge Pod gets stuck in <code>Init:CrashLoopBackOff</code> (<code>READY 0/2</code>). Because it never becomes Ready, the Deployment controller halts the rollout and keeps the 3 healthy Pods running and serving requests without interruption.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SECTION 3: ARCHITECTURE DIAGRAM -->
+    <section id="architecture">
+      <h2>3. Architecture Diagram &amp; Data Flow</h2>
+      <div class="diagram-box">
+        <img src="architecture.png" alt="Task 1 Multi-Container Pod Architecture Diagram" />
+      </div>
+      <div class="card">
+        <h3>How the Pod Lifecycle &amp; Data Flow Work Step-by-Step</h3>
+        <ol>
+          <li><strong>Phase 1 — Initialization:</strong> When a Pod is scheduled onto a worker node, the kubelet starts the Pod infrastructure (pause) container and runs <code>init-done</code> (<code>busybox:1.36</code>). It executes <code>sh -c "echo done"</code> and exits with code <code>0</code>.</li>
+          <li><strong>Phase 2 — Main &amp; Sidecar Startup:</strong> Once <code>init-done</code> succeeds, kubelet starts <code>nginx</code> and <code>time-updater</code> in parallel inside the shared PID namespace.</li>
+          <li><strong>Phase 3 — Initial Page Creation:</strong> <code>nginx</code> writes the initial timestamped banner to <code>/usr/share/nginx/html/index.html</code> and starts serving HTTP traffic on port 80 in the foreground (<code>nginx -g 'daemon off;'</code>).</li>
+          <li><strong>Phase 4 — Continuous 5-Second Updates:</strong> Every 5 seconds, <code>time-updater</code> looks up the <code>nginx</code> master PID via <code>pgrep -o nginx</code> and writes a fresh timestamp directly into <code>/proc/$PID/root/usr/share/nginx/html/index.html</code> using its <code>SYS_PTRACE</code> capability.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- SECTION 4: MANIFESTS -->
+    <section id="manifests">
+      <h2>4. Annotated YAML Manifests</h2>
+
+      <div class="card">
+        <h3>4.1 Namespace Manifest (<code>Task-1/namespace.yaml</code>)</h3>
+        <p>Isolates all Task 1 resources inside the dedicated <code>webapp</code> namespace.</p>
+        <pre><code>apiVersion: v1
+kind: Namespace
+metadata:
+  name: webapp</code></pre>
+      </div>
+
+      <div class="card">
+        <h3>4.2 Working Deployment Manifest (<code>Task-1/deployment.yaml</code>)</h3>
+        <p>
+          Deploys 3 replicas with label <code>app: web</code>, shared process namespace enabled, zero volumes, the <code>init-done</code> init container, the <code>nginx</code> web server, and the <code>time-updater</code> sidecar with <code>SYS_PTRACE</code>.
+        </p>
+        <pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deployment
+  namespace: webapp
+  labels:
+    app: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      shareProcessNamespace: true
+      initContainers:
+        - name: init-done
+          image: busybox:1.36
+          command: ["sh", "-c", "echo done"]
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "&lt;h1&gt;hello in MLOPS MENA COMMUNITY : $(date '+%Y-%m-%d %H:%M:%S')&lt;/h1&gt;" &gt; /usr/share/nginx/html/index.html
+              nginx -g 'daemon off;'
+        - name: time-updater
+          image: busybox:1.36
+          securityContext:
+            capabilities:
+              add: ["SYS_PTRACE"]
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while true; do
+                PID=$(pgrep -o nginx)
+                if [ -n "$PID" ]; then
+                  echo "&lt;h1&gt;hello in MLOPS MENA COMMUNITY : $(date '+%Y-%m-%d %H:%M:%S')&lt;/h1&gt;" \
+                    &gt; /proc/$PID/root/usr/share/nginx/html/index.html
+                fi
+                sleep 5
+              done</code></pre>
+      </div>
+
+      <div class="card">
+        <h3>4.3 Failing-Init Deployment Manifest for Step 5 (<code>Task-1/deployment-failing-init.yaml</code>)</h3>
+        <p>
+          Identical to <code>deployment.yaml</code> except the <code>init-done</code> container command prints <code>init failed</code> and exits with code <code>1</code> to test Kubernetes rollout resilience.
+        </p>
+        <pre><code>      initContainers:
+        - name: init-done
+          image: busybox:1.36
+          command: ["sh", "-c", "echo 'init failed'; exit 1"]</code></pre>
+      </div>
+    </section>
+
+    <!-- SECTION 5: STEP 5 Q&A -->
+    <section id="step5-qa">
+      <h2>5. Step 5 Failure Analysis &amp; Explicit Q&amp;A</h2>
+      <div class="callout danger">
+        <p><strong>Experiment:</strong> In Step 5, we update <code>init-done</code> to run <code>command: ["sh", "-c", "echo 'init failed'; exit 1"]</code> and apply the update over the existing Deployment without deleting it.</p>
+      </div>
+
+      <div class="card">
+        <h3>Q1: Which status does the new Pod show?</h3>
+        <p>
+          <strong>Answer:</strong> The newly created surge Pod immediately shows <code>Init:Error</code> (with <code>READY 0/2</code>) on its first failed attempt, and after rapid exponential backoff retries by the kubelet, it settles into <strong><code>Init:CrashLoopBackOff</code></strong> (<code>READY 0/2</code>). Inspecting the Pod with <code>kubectl describe pod</code> shows <code>State: Terminated</code>, <code>Reason: Error</code>, and <code>Exit Code: 1</code> for the <code>init-done</code> container.
+        </p>
+
+        <h3>Q2: Do <code>nginx</code> and <code>time-updater</code> start in the new Pod?</h3>
+        <p>
+          <strong>Answer:</strong> <strong>No.</strong> By design in Kubernetes, all <code>initContainers</code> must complete with exit code <code>0</code> before the kubelet starts any container listed in <code>spec.containers</code>. Because <code>init-done</code> exits with code <code>1</code>, both <code>nginx</code> and <code>time-updater</code> remain in the <code>Waiting</code> state with <code>Reason: PodInitializing</code> and never execute.
+        </p>
+
+        <h3>Q3: Is the page still reachable, and why?</h3>
+        <p>
+          <strong>Answer:</strong> <strong>Yes, the web page remains 100% reachable and continues updating its timestamp every 5 seconds.</strong><br />
+          <strong>Why:</strong> We updated the Deployment in-place using its default <code>RollingUpdate</code> strategy (<code>maxUnavailable: 25%</code>, <code>maxSurge: 25%</code>). With <code>replicas: 3</code>, <code>maxUnavailable</code> rounds down to <code>0</code> (no existing Ready Pods can be terminated until a new Pod becomes Ready) and <code>maxSurge</code> rounds up to <code>1</code> (at most 1 extra Pod is created at a time). While the single new surge Pod is stuck in <code>Init:CrashLoopBackOff</code>, the <strong>3 original Pods from the previous ReplicaSet stay <code>2/2 Running</code> and Ready</strong>, continuing to serve all incoming requests without downtime.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 6: 11 VERIFICATION CHECKS -->
+    <section id="verification">
+      <h2>6. Step-by-Step Execution &amp; 11 Verification Checks</h2>
+      <p>
+        Every requirement from the Session 1 specification was verified against the live 3-node Minikube cluster.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Check</th>
+            <th>Command</th>
+            <th>Expected Result</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>3 nodes Ready</td>
+            <td><code>kubectl get nodes -o wide</code></td>
+            <td><code>minikube</code>, <code>minikube-m02</code>, <code>minikube-m03</code> are <code>Ready</code></td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Deployment ready</td>
+            <td><code>kubectl get deploy web-deployment -n webapp</code></td>
+            <td><code>READY 3/3</code></td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Pods running</td>
+            <td><code>kubectl get pods -n webapp -l app=web -o wide</code></td>
+            <td>3 Pods, each <code>2/2 Running</code></td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Containers list</td>
+            <td><code>kubectl get pods -n webapp -l app=web -o jsonpath="{.items[0].spec.initContainers[*].name} {.items[0].spec.containers[*].name}"</code></td>
+            <td><code>init-done nginx time-updater</code></td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Init succeeded</td>
+            <td><code>kubectl logs deploy/web-deployment -n webapp -c init-done</code></td>
+            <td><code>done</code></td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Sidecar sees nginx</td>
+            <td><code>kubectl exec deploy/web-deployment -n webapp -c time-updater -- ps</code></td>
+            <td><code>nginx: master process</code> visible in process list</td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>Time updates</td>
+            <td><code>kubectl exec deploy/web-deployment -n webapp -c nginx -- cat /usr/share/nginx/html/index.html</code> (twice, 5s apart)</td>
+            <td><code>hello in MLOPS MENA COMMUNITY : ...</code> with updated timestamp</td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>No volumes</td>
+            <td><code>kubectl get deploy web-deployment -n webapp -o jsonpath="{.spec.template.spec.volumes}"</code></td>
+            <td>Empty output</td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>Failing init (Step 5)</td>
+            <td><code>kubectl get pods -n webapp -l app=web</code></td>
+            <td>New Pod <code>Init:Error</code> &rarr; <code>Init:CrashLoopBackOff</code> (<code>0/2</code>); 3 old Pods stay <code>2/2 Running</code></td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td>Init error details (Step 5)</td>
+            <td><code>kubectl describe pod &lt;new-pod&gt; -n webapp</code></td>
+            <td><code>init-done</code> shows <code>Exit Code: 1</code> and log <code>init failed</code></td>
+            <td class="status-pass">PASS</td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td>Fixed rollout (Step 6)</td>
+            <td><code>kubectl get deploy web-deployment -n webapp</code></td>
+            <td><code>READY 3/3</code>, <code>UP-TO-DATE 3</code>, <code>AVAILABLE 3</code></td>
+            <td class="status-pass">PASS</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card">
+        <h3>Captured Terminal Outputs (Checks 1 &ndash; 11)</h3>
+
+        <h4>Check 1: 3-Node Minikube Cluster with Calico CNI</h4>
+        <pre id="ev-check-1"><code>$ kubectl get nodes -o wide
+NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION                              CONTAINER-RUNTIME
+minikube       Ready    control-plane   16m   v1.37.0   192.168.49.2   &lt;none&gt;        Debian GNU/Linux 12 (bookworm)   6.18.33.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+minikube-m02   Ready    &lt;none&gt;          16m   v1.37.0   192.168.49.3   &lt;none&gt;        Debian GNU/Linux 12 (bookworm)   6.18.33.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+minikube-m03   Ready    &lt;none&gt;          15m   v1.37.0   192.168.49.4   &lt;none&gt;        Debian GNU/Linux 12 (bookworm)   6.18.33.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4</code></pre>
+
+        <h4>Check 2: Deployment Ready (3/3)</h4>
+        <pre id="ev-check-2"><code>$ kubectl get deploy web-deployment -n webapp
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+web-deployment   3/3     3            3           6m44s</code></pre>
+
+        <h4>Check 3: 3 Pods Running (2/2 Ready)</h4>
+        <pre id="ev-check-3"><code>$ kubectl get pods -n webapp -l app=web -o wide
+NAME                              READY   STATUS    RESTARTS   AGE     IP               NODE           NOMINATED NODE   READINESS GATES
+web-deployment-76978c6b58-2lk88   2/2     Running   0          6m44s   10.244.205.193   minikube-m02   &lt;none&gt;           &lt;none&gt;
+web-deployment-76978c6b58-j5jtj   2/2     Running   0          6m44s   10.244.151.1     minikube-m03   &lt;none&gt;           &lt;none&gt;
+web-deployment-76978c6b58-qjtzp   2/2     Running   0          6m44s   10.244.120.67    minikube       &lt;none&gt;           &lt;none&gt;</code></pre>
+
+        <h4>Check 4: Container Names in Pod Spec</h4>
+        <pre id="ev-check-4"><code>$ kubectl get pods -n webapp -l app=web -o jsonpath="{.items[0].spec.initContainers[*].name} {.items[0].spec.containers[*].name}"
+init-done nginx time-updater</code></pre>
+
+        <h4>Check 5: Init Container Logs</h4>
+        <pre id="ev-check-5"><code>$ kubectl logs deploy/web-deployment -n webapp -c init-done
+done</code></pre>
+
+        <h4>Check 6: Shared Process Namespace (Sidecar Sees nginx Master Process)</h4>
+        <pre id="ev-check-6"><code>$ kubectl exec deploy/web-deployment -n webapp -c time-updater -- ps
+PID   USER     TIME  COMMAND
+    1 65535     0:00 /pause
+   14 root      0:00 /bin/sh -c echo "&lt;h1&gt;hello in MLOPS MENA COMMUNITY : $(date '+%Y-%m-%d %H:%M:%S')&lt;/h1&gt;" &gt; /usr/share/nginx/html/index.html nginx -g 'daemon off;' 
+   21 root      0:00 nginx: master process nginx -g daemon off;
+   22 101       0:00 nginx: worker process
+   23 101       0:00 nginx: worker process
+   38 root      0:00 /bin/sh -c while true; do   PID=$(pgrep -o nginx)   if [ -n "$PID" ]; then     echo "&lt;h1&gt;hello in MLOPS MENA COMMUNITY : $(date '+%Y-%m-%d %H:%M:%S')&lt;/h1&gt;" &gt; /proc/$PID/root/usr/share/nginx/html/index.html   fi   sleep 5 done 
+   56 root      0:00 ps</code></pre>
+
+        <h4>Check 7: Dynamic Time Update Across 5 Seconds</h4>
+        <pre id="ev-check-7"><code>$ kubectl exec deploy/web-deployment -n webapp -c nginx -- cat /usr/share/nginx/html/index.html
+&lt;h1&gt;hello in MLOPS MENA COMMUNITY : 2026-11-12 07:30:25&lt;/h1&gt;
+# After 5 seconds:
+$ kubectl exec deploy/web-deployment -n webapp -c nginx -- cat /usr/share/nginx/html/index.html
+&lt;h1&gt;hello in MLOPS MENA COMMUNITY : 2026-11-12 07:30:30&lt;/h1&gt;</code></pre>
+
+        <h4>Check 8: Zero Volumes Configured</h4>
+        <pre id="ev-check-8"><code>$ kubectl get deploy web-deployment -n webapp -o jsonpath="{.spec.template.spec.volumes}"
+(empty - no volumes defined)</code></pre>
+
+        <h4>Check 9: Step 5 — Failing Init Container Rollout Behavior</h4>
+        <pre id="ev-check-9"><code>$ kubectl get pods -n webapp -l app=web
+NAME                              READY   STATUS                  RESTARTS     AGE
+web-deployment-68df485fcc-v2mdl   0/2     Init:CrashLoopBackOff   1 (3s ago)   4s
+web-deployment-76978c6b58-2lk88   2/2     Running                 0            6m57s
+web-deployment-76978c6b58-j5jtj   2/2     Running                 0            6m57s
+web-deployment-76978c6b58-qjtzp   2/2     Running                 0            6m57s</code></pre>
+
+        <h4>Check 10: Step 5 — Init Container Exit Code 1 &amp; Logs</h4>
+        <pre id="ev-check-10"><code>$ kubectl logs web-deployment-68df485fcc-v2mdl -n webapp -c init-done
+init failed
+
+$ kubectl describe pod web-deployment-68df485fcc-v2mdl -n webapp
+Init Containers:
+  init-done:
+    Container ID:  containerd://c1125214bade1ccc4bae80e011efe843388613fa203a2ae59996775819838fcf
+    Image:         busybox:1.36
+    Command:
+      sh
+      -c
+      echo 'init failed'; exit 1
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1
+      Started:      Thu, 12 Nov 2026 09:30:34 +0200
+      Finished:     Thu, 12 Nov 2026 09:30:34 +0200
+    Ready:          False
+    Restart Count:  1</code></pre>
+
+        <h4>Check 11: Step 6 — Fixed Rollout Restores 3/3 Healthy Pods</h4>
+        <pre id="ev-check-11"><code>$ kubectl apply -f Task-1/deployment.yaml
+$ kubectl rollout status deploy/web-deployment -n webapp
+deployment "web-deployment" successfully rolled out
+
+$ kubectl get deploy web-deployment -n webapp
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+web-deployment   3/3     3            3           7m2s</code></pre>
+      </div>
+    </section>
+
+    <!-- SECTION 7: SCREENSHOTS -->
+    <section id="screenshots">
+      <h2>7. Visual Verification Screenshots</h2>
+
+      <div class="grid-2">
+        <div class="screenshot-card">
+          <h4>1. 3-Node Minikube Cluster with Calico Ready</h4>
+          <img src="../screenshots/01-cluster-nodes.png" alt="01 Cluster Nodes Ready" />
+        </div>
+        <div class="screenshot-card">
+          <h4>2. Deployment &amp; 3 Pods Running (2/2 Ready)</h4>
+          <img src="../screenshots/02-pods-running.png" alt="02 Pods Running" />
+        </div>
+        <div class="screenshot-card">
+          <h4>3. Containers List, Init Logs &amp; Zero Volumes</h4>
+          <img src="../screenshots/03-containers-and-init.png" alt="03 Containers and Init Check" />
+        </div>
+        <div class="screenshot-card">
+          <h4>4. Shared PID Namespace &amp; 5-Second Time Updates</h4>
+          <img src="../screenshots/04-sidecar-and-time-update.png" alt="04 Sidecar and Time Update" />
+        </div>
+        <div class="screenshot-card">
+          <h4>5. Browser Output — First Timestamp</h4>
+          <img src="../screenshots/05-browser-time-1.png" alt="05 Browser Time 1" />
+        </div>
+        <div class="screenshot-card">
+          <h4>6. Browser Output — Updated Timestamp After 5 Seconds</h4>
+          <img src="../screenshots/06-browser-time-2.png" alt="06 Browser Time 2" />
+        </div>
+        <div class="screenshot-card">
+          <h4>7. Step 5 — Failing Init Container (Init:CrashLoopBackOff)</h4>
+          <img src="../screenshots/07-failing-init-rollout.png" alt="07 Failing Init Rollout" />
+        </div>
+        <div class="screenshot-card">
+          <h4>8. Step 6 — Fixed Deployment Rollout (3/3 Ready)</h4>
+          <img src="../screenshots/08-fixed-rollout.png" alt="08 Fixed Rollout" />
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
