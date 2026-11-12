@@ -1,0 +1,2 @@
+﻿NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+web-deployment   3/3     3            3           6m44s

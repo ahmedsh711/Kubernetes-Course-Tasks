@@ -1,0 +1,22 @@
+﻿PID   USER     TIME  COMMAND
+    1 65535     0:00 /pause
+   14 root      0:00 /bin/sh -c echo "<h1>hello in MLOPS MENA COMMUNITY : $(date '+%Y-%m-%d %H:%M:%S')</h1>" > /usr/share/nginx/html/index.html nginx -g 'daemon off;' 
+   21 root      0:00 nginx: master process nginx -g daemon off;
+   22 101       0:00 nginx: worker process
+   23 101       0:00 nginx: worker process
+   24 101       0:00 nginx: worker process
+   25 101       0:00 nginx: worker process
+   26 101       0:00 nginx: worker process
+   27 101       0:00 nginx: worker process
+   28 101       0:00 nginx: worker process
+   29 101       0:00 nginx: worker process
+   30 101       0:00 nginx: worker process
+   31 101       0:00 nginx: worker process
+   32 101       0:00 nginx: worker process
+   33 101       0:00 nginx: worker process
+   34 101       0:00 nginx: worker process
+   35 101       0:00 nginx: worker process
+   36 101       0:00 nginx: worker process
+   37 101       0:00 nginx: worker process
+   38 root      0:00 /bin/sh -c while true; do   PID=$(pgrep -o nginx)   if [ -n "$PID" ]; then     echo "<h1>hello in MLOPS MENA COMMUNITY : $(date '+%Y-%m-%d %H:%M:%S')</h1>" > /proc/$PID/root/usr/share/nginx/html/index.html   fi   sleep 5 done 
+   56 root      0:00 ps

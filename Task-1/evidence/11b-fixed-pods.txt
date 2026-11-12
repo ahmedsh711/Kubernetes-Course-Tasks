@@ -1,0 +1,4 @@
+﻿NAME                              READY   STATUS    RESTARTS   AGE
+web-deployment-76978c6b58-2lk88   2/2     Running   0          7m2s
+web-deployment-76978c6b58-j5jtj   2/2     Running   0          7m2s
+web-deployment-76978c6b58-qjtzp   2/2     Running   0          7m2s

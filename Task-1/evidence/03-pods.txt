@@ -1,0 +1,4 @@
+﻿NAME                              READY   STATUS    RESTARTS   AGE     IP               NODE           NOMINATED NODE   READINESS GATES
+web-deployment-76978c6b58-2lk88   2/2     Running   0          6m44s   10.244.205.193   minikube-m02   <none>           <none>
+web-deployment-76978c6b58-j5jtj   2/2     Running   0          6m44s   10.244.151.1     minikube-m03   <none>           <none>
+web-deployment-76978c6b58-qjtzp   2/2     Running   0          6m44s   10.244.120.67    minikube       <none>           <none>

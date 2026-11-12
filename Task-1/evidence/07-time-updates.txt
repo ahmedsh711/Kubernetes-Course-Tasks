@@ -1,0 +1,2 @@
+﻿Read 1 (t=0s):  <h1>hello in MLOPS MENA COMMUNITY : 2026-11-12 07:30:25</h1>
+Read 2 (t=+6s): <h1>hello in MLOPS MENA COMMUNITY : 2026-11-12 07:30:30</h1>
