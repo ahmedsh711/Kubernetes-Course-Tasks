@@ -227,7 +227,7 @@
         <p>
           In this task, we deploy a 3-replica web application named <code>web-deployment</code> inside the <code>webapp</code> namespace on a 3-node Minikube cluster running the <strong>Calico CNI</strong> network plugin. Each Pod serves an HTML page on port 80 that displays the current timestamp and refreshes every 5 seconds:
         </p>
-        <pre><code>hello in MLOPS MENA COMMUNITY : 2026-11-12 09:05:10</code></pre>
+        <pre><code>hello in MLOPS MENA COMMUNITY : &lt;YYYY-MM-DD HH:MM:SS&gt;</code></pre>
         <p>
           Normally, when a sidecar container updates a file served by a main web server container, both containers mount a shared <code>emptyDir</code> volume. <strong>In this task, volumes are strictly forbidden.</strong> Instead, each Pod uses three containers and shares the Linux process namespace (<code>shareProcessNamespace: true</code>) so the sidecar can write directly into the <code>nginx</code> container's filesystem via <code>/proc/&lt;PID&gt;/root</code>.
         </p>

@@ -45,7 +45,7 @@ Task-1/
 │   ├── verify.ps1                # End-to-end automated verification & screenshot script
 │   └── screenshots.py            # Headless Microsoft Edge Playwright screenshot utility
 ├── tests/
-│   └── test_task1.py             # Automated Unit, Linear, and Regression pytest suite (12 tests)
+│   └── test_task1.py             # Automated Unit, Linear, and Regression pytest suite (16 tests)
 ├── evidence/                     # Raw CLI verification logs (Checks 1-11 + pytest output)
 └── screenshots/                  # Terminal & browser verification screenshots
 ```
@@ -152,8 +152,8 @@ pytest Task-1/tests/test_task1.py -v
 
 | Suite Category | Class | Tests | Result |
 |---|---|---|---|
-| **Unit Tests** | `TestUnitManifestsAndDocs` | Validates `namespace.yaml`, `deployment.yaml` schema/labels/capabilities/no-volumes, exact single-line diff for `deployment-failing-init.yaml`, and clean human-written files | **4 / 4 PASSED** |
-| **Linear Lifecycle Tests** | `TestLinearClusterLifecycle` | Executes Steps 1 → 6 in strict sequence on the live cluster: 3 Ready nodes + Calico CNI, working deploy (`3/3`), `init-done` logs, `ps` shared PID check, 5s timestamp delta, Step 5 `Init:CrashLoopBackOff` (`Exit Code: 1`) + live HTTP `200 OK` zero-downtime proof, and Step 6 rollout recovery | **4 / 4 PASSED** |
+| **Unit Tests** | `TestUnitManifestsAndDocs` | Validates `namespace.yaml`, `deployment.yaml` schema/labels/capabilities/no-volumes, exact single-line diff for `deployment-failing-init.yaml`, clean human-written files, docs showing only real captured output (no invented timestamps, matching evidence, working image links), and portable scripts | **8 / 8 PASSED** |
+| **Linear Lifecycle Tests** | `TestLinearClusterLifecycle` | Executes Steps 1 → 6 in strict sequence on the live cluster: 3 Ready nodes + Calico CNI, working deploy (`3/3`), `init-done` logs, `ps` shared PID check, 5s timestamp delta, Step 5 `Init:CrashLoopBackOff` (`Exit Code: 1`) + live HTTP `200 OK` zero-downtime proof, and Step 6 rollout recovery (waits for the broken Step 5 pod to finish terminating) | **4 / 4 PASSED** |
 | **Regression Tests** | `TestRegressionInvariants` | Verifies zero lingering failed pods, `0` restarts on `time-updater` sidecars across all 3 replicas, label selector anti-drift (`app=web`), and non-empty PNG screenshots | **4 / 4 PASSED** |
 
 ---

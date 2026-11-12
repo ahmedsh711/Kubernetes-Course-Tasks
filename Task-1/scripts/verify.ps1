@@ -17,7 +17,8 @@ Write-Host "PASS #1: 3 nodes Ready" -ForegroundColor Green
 Write-Host "Applying namespace.yaml and deployment.yaml..."
 kubectl apply -f (Join-Path $TaskDir "namespace.yaml") | Out-Null
 kubectl apply -f (Join-Path $TaskDir "deployment.yaml") | Out-Null
-kubectl rollout status deploy/web-deployment -n webapp --timeout=180s | Out-Null
+kubectl rollout status deploy/web-deployment -n webapp --timeout=300s | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "Rollout of deployment.yaml did not finish in time" }
 
 # Check #2: Deployment ready (3/3)
 $deployOut = kubectl get deploy web-deployment -n webapp | Out-String
@@ -124,5 +125,8 @@ if ($fixedDeploy -notmatch "3/3\s+3\s+3") { throw "FAIL Check #11: Expected READ
 Write-Host "PASS #11: Deployment fixed — READY 3/3, UP-TO-DATE 3" -ForegroundColor Green
 
 Write-Host "Generating screenshots from real outputs..." -ForegroundColor Cyan
-& "C:\Miniconda3\python.exe" (Join-Path $PSScriptRoot "screenshots.py")
+$py = (Get-Command python -ErrorAction SilentlyContinue).Source
+if (-not $py) { $py = (Get-Command py -ErrorAction Stop).Source }
+& $py (Join-Path $PSScriptRoot "screenshots.py")
+if ($LASTEXITCODE -ne 0) { throw "screenshots.py failed" }
 Write-Host "=== ALL 11 CHECKS PASSED ===" -ForegroundColor Green

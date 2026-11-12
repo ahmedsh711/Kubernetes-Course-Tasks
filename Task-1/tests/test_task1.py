@@ -1,4 +1,4 @@
-"""
+﻿"""
 Automated Test Suite for Task 1: Multi-container Pods (Init Container & Sidecar)
 Covers:
   1. Unit Tests (TestUnitManifestsAndDocs): Static YAML schema, constraints, diff, and HTML/README checks.
@@ -103,6 +103,61 @@ class TestUnitManifestsAndDocs:
 
 
 # ============================================================================
+# 1b. UNIT TESTS — Docs must show the real captured output, never invented data
+# ============================================================================
+EVIDENCE_TO_CHECK = {
+    1: "01-nodes.txt",
+    2: "02-deployment.txt",
+    3: "03-pods.txt",
+    5: "05-init-logs.txt",
+    9: "09-failing-init-pods.txt",
+    11: "11-fixed-deployment.txt",
+}
+TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+
+
+def _html_text() -> str:
+    import html as htmllib
+    raw = (TASK_DIR / "docs" / "index.html").read_text(encoding="utf-8")
+    return htmllib.unescape(raw)
+
+
+def _squash(s: str) -> str:
+    return re.sub(r"\s+", " ", s).strip()
+
+
+class TestUnitDocsMatchEvidence:
+    def test_unit_all_image_links_resolve(self):
+        for doc, base in ((TASK_DIR / "docs" / "index.html", TASK_DIR / "docs"), (TASK_DIR / "README.md", TASK_DIR)):
+            text = doc.read_text(encoding="utf-8")
+            for src in re.findall(r'(?:src="|\]\()([^")]+\.png)', text):
+                assert (base / src).resolve().exists(), f"{doc.name} links to missing image {src}"
+
+    def test_unit_html_evidence_blocks_match_saved_output(self):
+        html_text = _html_text()
+        for n, fname in EVIDENCE_TO_CHECK.items():
+            m = re.search(rf'<pre id="ev-check-{n}">(.*?)</pre>', html_text, re.S)
+            assert m, f"ev-check-{n} block missing in index.html"
+            block = _squash(m.group(1))
+            for line in (EVIDENCE_DIR / fname).read_text(encoding="utf-8-sig").splitlines():
+                if line.strip():
+                    assert _squash(line) in block, f"ev-check-{n}: line from {fname} not in HTML: {line.strip()}"
+
+    def test_unit_no_invented_timestamps_in_docs(self):
+        known = set()
+        for f in EVIDENCE_DIR.glob("*.txt"):
+            known.update(TIMESTAMP.findall(f.read_text(encoding="utf-8", errors="ignore")))
+        for doc in (_html_text(), (TASK_DIR / "README.md").read_text(encoding="utf-8")):
+            for ts in TIMESTAMP.findall(doc):
+                assert ts in known, f"Timestamp {ts} appears in docs but in no evidence file"
+
+    def test_unit_scripts_are_portable(self):
+        for p in (TASK_DIR / "scripts").glob("*"):
+            if p.is_file():
+                assert "Miniconda3" not in p.read_text(encoding="utf-8", errors="ignore"), f"Hardcoded machine path in {p.name}"
+
+
+# ============================================================================
 # 2. LINEAR TESTS — Sequential End-to-End Execution on Live 3-Node Cluster
 # ============================================================================
 class TestLinearClusterLifecycle:
@@ -199,6 +254,17 @@ class TestLinearClusterLifecycle:
     def test_linear_04_step6_fix_recovery(self):
         run_kubectl(["apply", "-f", str(TASK_DIR / "deployment.yaml")])
         run_kubectl(["rollout", "status", "deploy/web-deployment", "-n", "webapp", "--timeout=180s"])
+
+        # rollout status returns once the new pods are ready, but the broken pod from
+        # Step 5 can still be terminating for a few seconds. Wait until only 3 remain.
+        deadline = time.time() + 90
+        names = []
+        while time.time() < deadline:
+            names = run_kubectl(["get", "pods", "-n", "webapp", "-l", "app=web", "-o", "name"]).splitlines()
+            if len(names) == 3:
+                break
+            time.sleep(2)
+        assert len(names) == 3, f"Expected 3 pods after recovery, still have {names}"
 
         dep_out = run_kubectl(["get", "deploy", "web-deployment", "-n", "webapp"])
         assert re.search(r"web-deployment\s+3/3\s+3\s+3", dep_out)
