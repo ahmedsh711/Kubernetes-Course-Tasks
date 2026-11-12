@@ -1,0 +1,5 @@
+# Namespace for the multi-container web application task
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: webapp
